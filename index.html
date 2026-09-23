@@ -1,0 +1,1035 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>電気のとどけ方ラボ</title>
+<meta name="description" content="中学校技術「電気を供給する仕組み」の授業用解説シミュレーター">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --ground:#EDF1F4; --surface:#FFFFFF; --sunk:#E3E9EE; --ink:#15202B; --muted:#56646F; --line:#C9D2D9;
+  --dc:#D0730A; --dc-soft:#FBEBD5; --ac:#1D66D0; --ac-soft:#DDE8FA;
+  --hz50:#2A7F8B; --hz60:#B65A28; --heat:#D23B28; --good:#1E8650; --warn:#C88A06;
+  --glow:#FFC94D;
+  --f-display:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
+  --f-body:"BIZ UDPGothic","Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"Consolas",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F151B; --surface:#17202A; --sunk:#1F2A35; --ink:#E5EBEF; --muted:#94A2AD; --line:#2D3A46;
+    --dc:#F0A23C; --dc-soft:#3A2A14; --ac:#5B9BFF; --ac-soft:#172A48;
+    --hz50:#4BB3BF; --hz60:#E08250; --heat:#FF6A52; --good:#4CC784; --warn:#E8B535; --glow:#FFD36B;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F151B; --surface:#17202A; --sunk:#1F2A35; --ink:#E5EBEF; --muted:#94A2AD; --line:#2D3A46;
+  --dc:#F0A23C; --dc-soft:#3A2A14; --ac:#5B9BFF; --ac-soft:#172A48;
+  --hz50:#4BB3BF; --hz60:#E08250; --heat:#FF6A52; --good:#4CC784; --warn:#E8B535; --glow:#FFD36B;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.7;padding:0 20px 48px}
+.wrap{max-width:1280px;margin:0 auto}
+h1,h2,h3{text-wrap:balance;margin:0}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+
+/* header */
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;padding-block:22px 14px}
+.eyebrow{font-size:13px;letter-spacing:.08em;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(28px,4vw,40px);line-height:1.2;letter-spacing:.02em}
+h1 .dc{color:var(--dc)} h1 .ac{color:var(--ac)}
+.plate{display:flex;gap:0;border:1.5px solid var(--ink);border-radius:4px;font-family:var(--f-num);font-size:13px;overflow:hidden}
+.plate span{padding:4px 10px;border-right:1.5px solid var(--ink)}
+.plate span:last-child{border-right:0}
+.plate b{font-weight:600}
+.hdr-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{border:1.5px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 14px;font-weight:700}
+.btn:hover{border-color:var(--ink)}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+
+/* tabs */
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:2px solid var(--ink);margin-bottom:22px}
+nav.tabs button{border:0;background:none;padding:10px 16px 8px;font-weight:700;font-size:17px;border-radius:8px 8px 0 0;color:var(--muted);position:relative}
+nav.tabs button small{display:block;font-weight:400;font-size:12px;letter-spacing:.04em}
+nav.tabs button:hover{color:var(--ink);background:var(--sunk)}
+nav.tabs button[aria-selected="true"]{color:var(--surface);background:var(--ink)}
+
+/* panel */
+section.panel{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:24px;align-items:start}
+section.panel[hidden]{display:none!important}
+@media (max-width:900px){section.panel{grid-template-columns:1fr}}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:14px;min-width:0}
+.stage h2{font-family:var(--f-display);font-weight:400;font-size:24px;line-height:1.3}
+.q{font-size:15px;color:var(--muted)}
+canvas{display:block;width:100%;background:var(--sunk);border-radius:8px}
+.controls{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+.seg{display:inline-flex;border:1.5px solid var(--ink);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:7px 16px;font-weight:700;font-size:16px}
+.seg button+button{border-left:1.5px solid var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.seg.dcac button[data-v="dc"][aria-pressed="true"]{background:var(--dc);color:#fff}
+.seg.dcac button[data-v="ac"][aria-pressed="true"]{background:var(--ac);color:#fff}
+.ctl-label{font-size:13px;color:var(--muted);display:block;letter-spacing:.04em}
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.ro{background:var(--sunk);border-radius:8px;padding:8px 12px}
+.ro .k{font-size:13px;color:var(--muted)}
+.ro .v{font-family:var(--f-num);font-size:22px;font-weight:600;line-height:1.3}
+
+/* notes */
+aside.notes{display:grid;gap:14px;min-width:0}
+.note{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.note h3{font-size:16px;margin-bottom:6px}
+.note p{margin:0 0 8px;max-width:38em}
+.note p:last-child{margin-bottom:0}
+.note ul{margin:0;padding-left:1.2em}
+.note li{margin-bottom:4px}
+.ref{display:inline-block;font-size:12px;border:1px solid var(--muted);color:var(--muted);border-radius:4px;padding:0 6px;margin-right:4px;letter-spacing:.03em}
+.formula{font-family:var(--f-body);font-weight:700;font-size:19px;background:var(--sunk);border-radius:8px;padding:8px 12px;margin:6px 0;display:block}
+.ask{border-left:4px solid var(--ink);padding-left:12px}
+em.dc{color:var(--dc);font-style:normal;font-weight:700}
+em.ac{color:var(--ac);font-style:normal;font-weight:700}
+em.hot{color:var(--heat);font-style:normal;font-weight:700}
+
+/* batteries */
+.cells{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.cell{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;text-align:left;display:grid;gap:2px;align-content:start}
+.cell:hover{border-color:var(--ink)}
+.cell[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.cell .kind{font-size:12px;font-weight:700;letter-spacing:.04em}
+.cell .kind.p1{color:var(--dc)} .cell .kind.p2{color:var(--ac)}
+.cell .nm{font-weight:700;font-size:16px;line-height:1.35}
+.cell .vv{font-family:var(--f-num);font-size:13px;color:var(--muted)}
+.bench{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;align-items:center;background:var(--sunk);border-radius:10px;padding:14px}
+@media (max-width:560px){.bench{grid-template-columns:1fr}}
+.gauge{height:26px;border-radius:6px;background:var(--surface);border:1.5px solid var(--ink);overflow:hidden;position:relative}
+.gauge i{position:absolute;inset:0 auto 0 0;background:var(--good);transition:width .1s linear}
+.gauge i.fat{background:repeating-linear-gradient(45deg,var(--warn) 0 6px,transparent 6px 12px);opacity:.8}
+.msg{min-height:1.7em;font-weight:700}
+.msg.bad{color:var(--heat)} .msg.ok{color:var(--good)}
+.hold{border:2px solid var(--ink);background:var(--surface);border-radius:10px;padding:10px 18px;font-weight:700;font-size:17px;user-select:none;touch-action:none}
+.hold:active,.hold.on{background:var(--ink);color:var(--surface)}
+.hold:disabled{opacity:.4;cursor:not-allowed}
+.adapter{overflow-x:auto}
+.adapter svg{min-width:640px;width:100%;height:auto;display:block}
+
+/* chain */
+.chainbox{overflow-x:auto;background:var(--sunk);border-radius:8px}
+.chainbox svg{display:block;min-width:820px;width:100%;height:auto}
+.node{cursor:pointer}
+.node:hover .nbox,.node.sel .nbox{stroke:var(--ink);stroke-width:2.5}
+.flow{stroke-dasharray:6 10;animation:flow 1s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-16}}
+.paused .flow{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){.flow{animation:none}}
+.info{background:var(--sunk);border-radius:8px;padding:10px 14px;min-height:5.2em}
+.info b.v{font-family:var(--f-num);font-size:20px;color:var(--ac)}
+input[type=range]{width:100%;accent-color:var(--ink)}
+.bars{display:grid;gap:6px}
+.bar{height:30px;border-radius:6px;background:var(--surface);border:1.5px solid var(--ink);overflow:hidden;display:flex}
+.bar i{display:block;height:100%;transition:width .2s}
+.bar .deliv{background:var(--good)} .bar .lost{background:var(--heat)}
+.legend{display:flex;gap:16px;font-size:14px;flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+
+/* map */
+.mapgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:620px){.mapgrid{grid-template-columns:1fr}}
+.mapbox svg{width:100%;height:auto;display:block}
+.tile{cursor:pointer}
+.tile text{pointer-events:none}
+.tile:hover rect,.tile.sel rect{stroke:var(--ink);stroke-width:2.5}
+
+/* balance */
+.loads{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.load{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px;text-align:left;font-weight:700}
+.load small{display:block;font-weight:400;color:var(--muted);font-family:var(--f-num);font-size:13px}
+.load[aria-pressed="true"]{border-color:var(--warn);background:var(--dc-soft);box-shadow:0 0 0 2px var(--glow) inset}
+.load[aria-pressed="true"]::before{content:"● ";color:var(--warn)}
+.load[aria-pressed="false"]::before{content:"○ ";color:var(--muted)}
+.bigslider{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
+.bigslider output{font-family:var(--f-num);font-size:26px;font-weight:600;min-width:3ch;text-align:right}
+.chart svg{width:100%;height:auto;display:block}
+.switch{display:inline-flex;gap:8px;align-items:center;font-weight:700}
+.switch input{width:20px;height:20px;accent-color:var(--ac)}
+footer{margin-top:28px;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <div>
+    <div class="eyebrow">技術・家庭〔技術分野〕 3編1章 電気を供給する仕組み ｜ p.144–145</div>
+    <h1>電気のとどけ方ラボ <span class="dc">直流</span>と<span class="ac">交流</span></h1>
+  </div>
+  <div class="hdr-tools">
+    <div class="plate" aria-label="定格表示の例"><span>入力 <b>AC100V</b></span><span><b>50/60Hz</b></span><span>出力 <b>DC5V</b></span></div>
+    <button class="btn" id="pauseBtn" aria-pressed="false">一時停止</button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-tab="dcac" aria-selected="true">直流と交流<small>図2・図3</small></button>
+  <button role="tab" data-tab="cell" aria-selected="false">電池とACアダプタ<small>図2・図3</small></button>
+  <button role="tab" data-tab="line" aria-selected="false">送電・配電<small>図5</small></button>
+  <button role="tab" data-tab="hz" aria-selected="false">50Hzと60Hz<small>図4</small></button>
+  <button role="tab" data-tab="bal" aria-selected="false">需要と供給のバランス<small>図6・やってみよう</small></button>
+</nav>
+
+<!-- ============ 直流と交流 ============ -->
+<section class="panel" id="p-dcac">
+  <div class="stage">
+    <div>
+      <h2>電流の向きは、ずっと同じ？ 入れかわる？</h2>
+      <div class="q">点は電流のイメージです。スローモーションで向きの変化を見てみよう。</div>
+    </div>
+    <canvas id="cvCircuit" style="height:260px"></canvas>
+    <canvas id="cvWave" style="height:200px"></canvas>
+    <div class="controls">
+      <div><span class="ctl-label">電源</span>
+        <div class="seg dcac" id="segMode"><button data-v="dc" aria-pressed="false">直流（DC）電池</button><button data-v="ac" aria-pressed="true">交流（AC）コンセント</button></div></div>
+      <div><span class="ctl-label">周波数</span>
+        <div class="seg" id="segHz"><button data-v="50" aria-pressed="true">50Hz</button><button data-v="60" aria-pressed="false">60Hz</button></div></div>
+      <div><span class="ctl-label">再生の速さ</span>
+        <div class="seg" id="segSlow"><button data-v="1">実際</button><button data-v="0.1">1/10</button><button data-v="0.04">1/25</button><button data-v="0.02" aria-pressed="true">1/50</button><button data-v="0.01">1/100</button></div></div>
+    </div>
+    <div class="readouts">
+      <div class="ro"><div class="k">いまの電流の向き</div><div class="v" id="roDir">→</div></div>
+      <div class="ro"><div class="k">1秒間にくり返す回数</div><div class="v" id="roHz">50 回</div></div>
+      <div class="ro"><div class="k">グラフの横幅（実際の時間）</div><div class="v" id="roWin">0.06 秒</div></div>
+    </div>
+  </div>
+  <aside class="notes">
+    <div class="note"><h3>直流（DC）</h3>
+      <p>電圧の大きさと電流の向きが<em class="dc">時間がたっても変わらない</em>電気。電池や、ACアダプタから出る電気。</p></div>
+    <div class="note"><h3>交流（AC）</h3>
+      <p>電圧の大きさと電流の向きが<em class="ac">周期的に変わる</em>電気。発電所から送られ、コンセントに来ている電気。</p>
+      <p>1秒間にくり返す回数を<b>周波数</b>といい、単位は <b>Hz（ヘルツ）</b>。</p></div>
+    <div class="note"><h3>交流で送るのはなぜ？</h3>
+      <p><b>変圧器</b>で電圧をかんたんに変えられるから。高い電圧にして送ると、とちゅうで失う電気（損失）が少なくなる。→「送電・配電」タブへ</p></div>
+    <div class="note ask"><h3>考えてみよう</h3>
+      <p>「実際」の速さにすると、電球はどう見える？ 向きが入れかわっているのに、なぜちらついて見えないのだろう。</p></div>
+    <div><span class="ref">教科書 p.144 図2・図3</span></div>
+  </aside>
+</section>
+
+<!-- ============ 電池 ============ -->
+<section class="panel" id="p-cell" hidden>
+  <div class="stage">
+    <div>
+      <h2>電池は使い切り？ くり返し使える？</h2>
+      <div class="q">電池をえらんで「使う」「充電する」を長押ししてみよう。</div>
+    </div>
+    <div class="cells" id="cells"></div>
+    <div class="bench">
+      <canvas id="cvLamp" style="height:170px"></canvas>
+      <div style="display:grid;gap:8px">
+        <div><b id="bName">アルカリ乾電池</b>　<span class="num" id="bVolt">1.5V</span></div>
+        <div><span class="ctl-label">残りの量</span><div class="gauge"><i id="gLevel" style="width:100%"></i></div></div>
+        <div><span class="ctl-label">いま出せるパワー（しま模様＝つかれ）</span><div class="gauge"><i id="gPower" style="width:100%"></i><i class="fat" id="gFat" style="width:0"></i></div></div>
+        <div class="controls">
+          <button class="hold" id="useBtn">使う（長押し）</button>
+          <button class="hold" id="chgBtn">充電する（長押し）</button>
+          <button class="btn" id="newBtn">新品にする</button>
+        </div>
+        <div class="msg" id="bMsg" aria-live="polite"></div>
+      </div>
+    </div>
+    <div>
+      <h2 style="font-size:20px">ACアダプタの中で起きていること</h2>
+      <div class="q">コンセントの交流を、機器が使える低い電圧の直流に変えている。</div>
+    </div>
+    <div class="adapter"><svg id="svgAdapter" viewBox="0 0 800 200" role="img" aria-label="ACアダプタの変換の流れ"></svg></div>
+  </div>
+  <aside class="notes">
+    <div class="note"><h3>一次電池 と 二次電池</h3>
+      <ul><li><em class="dc">一次電池</em>…使い切り。充電できない（充電すると液もれ・破裂の危険）。</li>
+      <li><em class="ac">二次電池</em>…充電して、くり返し使える。「蓄電池」ともいう。</li></ul></div>
+    <div class="note"><h3>用途に合わせて選ぶ</h3>
+      <p id="bInfo"></p></div>
+    <div class="note"><h3>安全に使う・捨てる</h3>
+      <ul><li>ACアダプタは<b>定格表示</b>（入力・出力の電圧）を確かめ、機器に合ったものを使う。</li>
+      <li>リチウムイオン電池は、ごみにまぜると<em class="hot">火災</em>の原因に。回収ボックスへ。</li>
+      <li>使い終わった乾電池は、端子にテープをはって地域のルールで出す。</li></ul></div>
+    <div><span class="ref">教科書 p.144 図2・図3</span><span class="ref">解説1</span></div>
+  </aside>
+</section>
+
+<!-- ============ 送電・配電 ============ -->
+<section class="panel" id="p-line" hidden>
+  <div class="stage">
+    <div>
+      <h2>発電所から家庭まで、電圧はどう変わる？</h2>
+      <div class="q">施設をクリックすると説明が出ます。線の太さは電圧の高さのイメージ。</div>
+    </div>
+    <div class="chainbox"><svg id="svgChain" viewBox="0 0 900 250" role="img" aria-label="発電所から家庭までの電圧の変化"></svg></div>
+    <div class="info" id="chainInfo" aria-live="polite"></div>
+    <div>
+      <h2 style="font-size:20px">なぜ、わざわざ高い電圧で送るの？</h2>
+      <div class="q">同じ電力（100万kW）を、抵抗2Ωの電線で送ったときのイメージ計算。</div>
+    </div>
+    <canvas id="cvWire" style="height:130px"></canvas>
+    <div>
+      <label class="ctl-label" for="vSlider">送電の電圧</label>
+      <input type="range" id="vSlider" min="0" max="5" step="1" value="4">
+    </div>
+    <div class="readouts">
+      <div class="ro"><div class="k">電圧</div><div class="v" id="lV">–</div></div>
+      <div class="ro"><div class="k">流れる電流</div><div class="v" id="lI">–</div></div>
+      <div class="ro"><div class="k">熱で失う割合</div><div class="v" id="lLoss">–</div></div>
+    </div>
+    <div class="bars">
+      <div class="bar"><i class="deliv" id="barD"></i><i class="lost" id="barL"></i></div>
+      <div class="legend"><span style="--c:var(--good)">家庭や工場に届く電気</span><span style="--c:var(--heat)">電線で熱になって失う電気</span></div>
+    </div>
+  </div>
+  <aside class="notes">
+    <div class="note"><h3>送電 と 配電</h3>
+      <p>発電所から配電用変電所まで送ることを<b>送電</b>、配電用変電所から家庭や工場などに送ることを<b>配電</b>という。</p></div>
+    <div class="note"><h3>しくみを式で</h3>
+      <span class="formula">電力 ＝ 電圧 × 電流</span>
+      <span class="formula">損失 ＝ 抵抗 × 電流 × 電流</span>
+      <p>同じ電力なら、電圧を<b>10倍</b>にすると電流は<b>1/10</b>、熱で失う電気は<b>1/100</b>になる。</p></div>
+    <div class="note"><h3>なぜ下げながら届ける？</h3>
+      <p>高い電圧は遠くへ送るのに便利だが、そのままでは危険で家電も使えない。変電所や<b>柱上変圧器</b>で少しずつ下げ、家庭では<b>100V・200V</b>で使う。</p></div>
+    <div class="note ask"><h3>考えてみよう</h3>
+      <p>電圧を上げると電線はどう変わった？ 鉄塔が高く、電線が地面から遠いのはなぜだろう。</p></div>
+    <div><span class="ref">教科書 p.145 図5</span><span class="ref">解説3</span></div>
+  </aside>
+</section>
+
+<!-- ============ 周波数 ============ -->
+<section class="panel" id="p-hz" hidden>
+  <div class="stage">
+    <div>
+      <h2>東と西で、周波数がちがう</h2>
+      <div class="q">都道府県をクリックしてみよう。境目はおおよそ静岡県の富士川〜新潟県の糸魚川。</div>
+    </div>
+    <div class="mapgrid">
+      <div class="mapbox"><svg id="svgMap" viewBox="0 0 640 520" role="img" aria-label="都道府県別の周波数（タイル地図）"></svg></div>
+      <div style="display:grid;gap:12px">
+        <div class="legend"><span style="--c:var(--hz50)">50Hz（東日本）</span><span style="--c:var(--hz60)">60Hz（西日本）</span></div>
+        <div class="info" id="hzInfo" aria-live="polite"></div>
+        <canvas id="cvHz" style="height:220px"></canvas>
+        <div class="q">上：50Hz　下：60Hz（同じ0.1秒間の波を1/50の速さで表示）</div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    <div class="note"><h3>なぜ2つあるの？</h3>
+      <p>明治時代、東京では<b>ドイツ製（50Hz）</b>、大阪では<b>アメリカ製（60Hz）</b>の発電機を輸入して使いはじめた。それが今も続いている。</p></div>
+    <div class="note"><h3>こまることは？</h3>
+      <ul><li>昔の電子レンジや洗濯機などには、周波数によって使えない・性能が変わる製品があった。<b>「50/60Hz」</b>の表示を確認しよう。</li>
+      <li>東と西で電気を送り合うには<b>周波数変換所</b>が必要で、送れる量に限りがある。</li></ul></div>
+    <div class="note"><h3>わたしたちの地域は？</h3>
+      <p>北海道は <b style="color:var(--hz50)">50Hz</b>。地図の北海道を押してみよう。</p></div>
+    <div><span class="ref">教科書 p.145 図4</span><span class="ref">解説2</span></div>
+  </aside>
+</section>
+
+<!-- ============ バランス ============ -->
+<section class="panel" id="p-bal" hidden>
+  <div class="stage">
+    <div>
+      <h2>発電所の役になって、需要と供給を合わせよう</h2>
+      <div class="q">使う電気（需要）と、つくる電気（供給）がずれると周波数がくるう。大きくずれると停電！</div>
+    </div>
+    <canvas id="cvGen" style="height:230px"></canvas>
+    <div class="bigslider">
+      <label for="gen" style="font-weight:700">発電の量</label>
+      <input type="range" id="gen" min="0" max="20" step="1" value="5">
+      <output id="genOut" class="num">5</output>
+    </div>
+    <div>
+      <span class="ctl-label">電気を使う場所（押すとスイッチが切りかわる）</span>
+      <div class="loads" id="loads"></div>
+    </div>
+    <div class="controls">
+      <button class="btn" id="autoBtn" aria-pressed="false">使う量を自動で変える</button>
+      <button class="btn" id="resetBtn">やり直す</button>
+      <span class="q">安定して送れた時間 <b class="num" id="okTime">0.0</b> 秒</span>
+    </div>
+    <div>
+      <h2 style="font-size:20px">1日の電気の使われ方と、ピークを下げる工夫</h2>
+      <div class="controls" style="margin-top:6px">
+        <div class="seg" id="segSeason"><button data-v="winter" aria-pressed="true">冬の日</button><button data-v="summer" aria-pressed="false">夏の日</button></div>
+        <label class="switch"><input type="checkbox" id="shift">蓄電池で夜にためて、ピーク時に使う</label>
+      </div>
+    </div>
+    <div class="chart"><svg id="svgDay" viewBox="0 0 640 270" role="img" aria-label="1日の電力使用量のグラフ"></svg></div>
+    <div class="readouts">
+      <div class="ro"><div class="k">いちばん多い時の使用量</div><div class="v" id="dPeak">100</div></div>
+      <div class="ro"><div class="k">必要な発電所（1か所＝10）</div><div class="v" id="dPlants">10 か所</div></div>
+    </div>
+  </div>
+  <aside class="notes">
+    <div class="note"><h3>電力の需要と供給のバランス</h3>
+      <p>電気はたくさんためておくのがむずかしいので、発電所では、使われる量を予想しながら<b>使う量と同じだけ</b>発電し続けている。</p>
+      <p>バランスがくずれると周波数がずれ、大きくずれると<em class="hot">停電</em>することがある。</p></div>
+    <div class="note"><h3>安定して届けるための工夫</h3>
+      <ul><li>電気の使用量を予想して発電する</li>
+      <li>ピーク時の電力を下げる（節電）</li>
+      <li>1人1人の節電と省エネが大切</li>
+      <li>使用量の少ない時間帯に蓄電し、多い時間帯に使う</li></ul></div>
+    <div class="note ask"><h3>やってみよう（p.145）</h3>
+      <p>手回し発電機を「発電所役」、電球をつなぐ人を「使用者役」にして、電球の数を変えると手ごたえはどう変わる？</p></div>
+    <div><span class="ref">教科書 p.145 図6</span><span class="ref">やってみよう</span></div>
+    <p class="q" style="margin:0">グラフや発電量の数値は、しくみを理解するためのイメージです。</p>
+  </aside>
+</section>
+
+<footer>授業用の解説シミュレーター。教科書の図番号は、手元の教科書と照らし合わせて使ってください。</footer>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const TAU = Math.PI * 2;
+let C = {};
+function readColors(){
+  const cs = getComputedStyle(document.documentElement);
+  ["ground","surface","sunk","ink","muted","line","dc","dc-soft","ac","ac-soft","hz50","hz60","heat","good","warn","glow"]
+    .forEach(k => C[k] = cs.getPropertyValue("--"+k).trim());
+}
+readColors();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readColors);
+new MutationObserver(readColors).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+
+function fit(cv){
+  const r = cv.getBoundingClientRect(), d = devicePixelRatio || 1;
+  const w = Math.round(r.width*d), h = Math.round(r.height*d);
+  if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; }
+  const c = cv.getContext("2d"); c.setTransform(d,0,0,d,0,0);
+  c.clearRect(0,0,r.width,r.height);
+  return [c, r.width, r.height];
+}
+const FONT = '"BIZ UDPGothic","Hiragino Sans","Yu Gothic",sans-serif';
+const NUMF = '"IBM Plex Mono",Consolas,monospace';
+function seg(id, cb){
+  const el = $(id);
+  el.addEventListener("click", e => {
+    const b = e.target.closest("button"); if(!b) return;
+    el.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x===b ? "true":"false"));
+    cb(b.dataset.v);
+  });
+}
+function holdBtn(btn, onChange){
+  const on = v => { btn.classList.toggle("on", v); onChange(v); };
+  btn.addEventListener("pointerdown", e => { if(btn.disabled) return; btn.setPointerCapture(e.pointerId); on(true); });
+  ["pointerup","pointercancel","lostpointercapture"].forEach(t => btn.addEventListener(t, () => on(false)));
+  btn.addEventListener("keydown", e => { if((e.key===" "||e.key==="Enter") && !e.repeat){ e.preventDefault(); on(true);} });
+  btn.addEventListener("keyup", e => { if(e.key===" "||e.key==="Enter") on(false); });
+}
+
+/* ---------- tabs & pause ---------- */
+let active = "dcac", paused = false;
+$$("nav.tabs button").forEach(b => b.addEventListener("click", () => {
+  active = b.dataset.tab;
+  $$("nav.tabs button").forEach(x => x.setAttribute("aria-selected", x===b ? "true":"false"));
+  $$("section.panel").forEach(p => p.hidden = p.id !== "p-"+active);
+}));
+$("#pauseBtn").addEventListener("click", e => {
+  paused = !paused;
+  e.currentTarget.setAttribute("aria-pressed", paused);
+  e.currentTarget.textContent = paused ? "再生する" : "一時停止";
+  document.body.classList.toggle("paused", paused);
+});
+
+/* ================= 直流と交流 ================= */
+const W1 = { mode:"ac", hz:50, slow:0.02, t:0, off:0 };
+seg("#segMode", v => W1.mode = v);
+seg("#segHz", v => W1.hz = +v);
+seg("#segSlow", v => W1.slow = +v);
+function volt(t){ return W1.mode==="dc" ? 1 : Math.sin(TAU*W1.hz*t); }
+
+function stepDcac(dt){
+  W1.t += dt * W1.slow;
+  const v = volt(W1.t);
+  if (W1.mode==="dc") W1.off += 0.08*dt;
+  else if (W1.slow < 1) W1.off += v * 0.9 * dt * (W1.slow*W1.hz) ;
+}
+function drawCircuit(){
+  const [c,w,h] = fit($("#cvCircuit"));
+  const real = W1.slow >= 1;
+  const v = volt(W1.t);
+  const x0=70, x1=w-70, y0=34, y1=h-34;
+  const segs = [[x0,y0,x1,y0],[x1,y0,x1,y1],[x1,y1,x0,y1],[x0,y1,x0,y0]];
+  const lens = segs.map(s => Math.hypot(s[2]-s[0], s[3]-s[1]));
+  const L = lens.reduce((a,b)=>a+b,0);
+  const col = W1.mode==="dc" ? C.dc : C.ac;
+  c.lineWidth = 6; c.strokeStyle = C.muted; c.lineCap="round";
+  c.strokeRect(x0,y0,x1-x0,y1-y0);
+  // dots
+  const N = Math.max(16, Math.round(L/42));
+  c.fillStyle = col;
+  for (let i=0;i<N;i++){
+    let s = ((i/N + W1.off) % 1 + 1) % 1 * L;
+    let k=0; while (s > lens[k]) { s -= lens[k]; k++; }
+    const g = segs[k], f = s/lens[k];
+    let px = g[0]+(g[2]-g[0])*f, py = g[1]+(g[3]-g[1])*f;
+    if (real && W1.mode==="ac"){ px += (Math.random()-.5)*1.5; py += (Math.random()-.5)*1.5; }
+    c.beginPath(); c.arc(px,py,5,0,TAU); c.fill();
+  }
+  // source (left)
+  const sy = (y0+y1)/2;
+  c.fillStyle = C.surface; c.strokeStyle = C.ink; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(x0-44, sy-42, 88, 84, 10); c.fill(); c.stroke();
+  c.fillStyle = C.ink; c.textAlign="center"; c.textBaseline="middle";
+  if (W1.mode==="dc"){
+    c.fillStyle = col; c.fillRect(x0-14, sy-26, 28, 40); c.fillRect(x0-6, sy-31, 12, 5);
+    c.fillStyle = "#fff"; c.font = `700 16px ${FONT}`; c.fillText("+", x0, sy-16);
+    c.fillStyle = C.ink; c.font = `700 13px ${FONT}`; c.fillText("電池 1.5V", x0, sy+28);
+  } else {
+    c.strokeStyle = col; c.lineWidth = 2.5;
+    c.beginPath(); c.roundRect(x0-20, sy-30, 40, 44, 6); c.stroke();
+    c.fillStyle = col; c.fillRect(x0-9, sy-20, 4, 12); c.fillRect(x0+5, sy-20, 4, 12);
+    c.fillStyle = C.ink; c.font = `700 13px ${FONT}`; c.fillText("コンセント", x0, sy+28);
+  }
+  // lamp (right)
+  const b = real ? (W1.mode==="dc" ? 1 : 0.9) : Math.abs(v);
+  const lx = x1, ly = sy;
+  const grd = c.createRadialGradient(lx,ly,4,lx,ly,70);
+  c.globalAlpha = b*0.85;
+  grd.addColorStop(0, C.glow); grd.addColorStop(1, "rgba(255,200,80,0)");
+  c.fillStyle = grd; c.beginPath(); c.arc(lx,ly,70,0,TAU); c.fill();
+  c.globalAlpha = 1;
+  c.fillStyle = C.surface; c.strokeStyle = C.ink; c.lineWidth = 2;
+  c.beginPath(); c.arc(lx,ly-6,26,0,TAU); c.fill(); c.stroke();
+  c.globalAlpha = 0.25 + b*0.75; c.fillStyle = C.glow;
+  c.beginPath(); c.arc(lx,ly-6,20,0,TAU); c.fill(); c.globalAlpha = 1;
+  c.fillStyle = C.muted; c.fillRect(lx-12, ly+20, 24, 16);
+  c.fillStyle = C.ink; c.font = `700 13px ${FONT}`; c.fillText("電球", lx, ly+50);
+  // direction arrow
+  const cx = (x0+x1)/2;
+  c.font = `700 15px ${FONT}`;
+  if (real && W1.mode==="ac"){
+    c.fillStyle = C.ac; c.fillText(`向きが1秒間に${W1.hz*2}回入れかわる（速すぎて見えない）`, cx, sy);
+  } else {
+    const dir = v >= 0 ? 1 : -1, mag = Math.abs(v);
+    c.save(); c.translate(cx, sy); c.globalAlpha = 0.3 + 0.7*mag;
+    c.fillStyle = col;
+    const len = 30 + 70*mag;
+    c.beginPath(); c.moveTo(-len*dir,-8); c.lineTo(len*dir-14*dir,-8); c.lineTo(len*dir-14*dir,-18);
+    c.lineTo(len*dir,0); c.lineTo(len*dir-14*dir,18); c.lineTo(len*dir-14*dir,8); c.lineTo(-len*dir,8); c.closePath(); c.fill();
+    c.restore();
+    c.fillStyle = C.muted; c.font = `13px ${FONT}`;
+    c.fillText("上の電線での電流の向き", cx, sy+34);
+  }
+  $("#roDir").textContent = (real && W1.mode==="ac") ? "→ ← →（高速）" : (W1.mode==="dc" ? "→ ずっと同じ" : (v>=0 ? "→ 右向き" : "← 左向き"));
+  $("#roDir").style.color = col;
+}
+function drawWave(){
+  const [c,w,h] = fit($("#cvWave"));
+  const ml=64, mr=20, mt=16, mb=30;
+  const pw = w-ml-mr, ph = h-mt-mb, zy = mt+ph/2, amp = ph*0.42;
+  const win = 3 / W1.hz;
+  const real = W1.slow >= 1;
+  const tEnd = real ? win : W1.t;
+  c.strokeStyle = C.line; c.lineWidth = 1;
+  for (let i=0;i<=3;i++){ const x = ml + pw*i/3; c.beginPath(); c.moveTo(x,mt); c.lineTo(x,mt+ph); c.stroke(); }
+  c.strokeStyle = C.muted; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(ml,zy); c.lineTo(ml+pw,zy); c.stroke();
+  c.beginPath(); c.moveTo(ml,mt); c.lineTo(ml,mt+ph); c.stroke();
+  c.fillStyle = C.muted; c.font = `13px ${FONT}`; c.textAlign="right"; c.textBaseline="middle";
+  c.fillText("＋", ml-8, zy-amp); c.fillText("0", ml-8, zy); c.fillText("−", ml-8, zy+amp);
+  c.save(); c.translate(16, zy); c.rotate(-Math.PI/2); c.textAlign="center"; c.fillText("電圧", 0, 0); c.restore();
+  c.textAlign = "right"; c.textBaseline = "top"; c.fillText("時間 →", ml+pw, mt+ph+8);
+  c.textAlign = "left"; c.fillStyle = W1.mode==="dc" ? C.dc : C.ac; c.font = `700 14px ${FONT}`;
+  c.fillText(W1.mode==="dc" ? "(a) 直流" : "(b) 交流", ml+6, mt+ph+8);
+  const col = W1.mode==="dc" ? C.dc : C.ac;
+  c.strokeStyle = col; c.lineWidth = 3.5; c.beginPath();
+  for (let i=0;i<=pw;i+=2){
+    const t = tEnd - win + win*i/pw;
+    const y = zy - amp*volt(t);
+    i===0 ? c.moveTo(ml+i,y) : c.lineTo(ml+i,y);
+  }
+  c.stroke();
+  if (!real){
+    const y = zy - amp*volt(tEnd);
+    c.fillStyle = col; c.beginPath(); c.arc(ml+pw, y, 7, 0, TAU); c.fill();
+    c.strokeStyle = C.surface; c.lineWidth = 2; c.stroke();
+  }
+  $("#roHz").textContent = W1.mode==="dc" ? "0 回（変化なし）" : `${W1.hz} 回`;
+  $("#roWin").textContent = `${win.toFixed(3)} 秒`;
+}
+
+/* ================= 電池 ================= */
+const CELLS = [
+  {id:"mn", nm:"マンガン乾電池", kind:1, v:"1.5V", drain:.10, fat:.9, use:"リモコン・時計・懐中電灯",
+    tip:"休み休み使うと、パワーが少し回復する。小さな電流で長く使う機器に向く。"},
+  {id:"al", nm:"アルカリ乾電池", kind:1, v:"1.5V", drain:.055, fat:.15, use:"おもちゃ・ライト・ワイヤレス機器",
+    tip:"パワフルで長持ち。大きな電流が必要な機器に向く。"},
+  {id:"li", nm:"リチウム電池（コイン形）", kind:1, v:"3V", drain:.04, fat:.1, use:"腕時計・体温計・電卓",
+    tip:"小さくて軽く、長い期間使える。"},
+  {id:"nh", nm:"ニッケル水素電池", kind:2, v:"1.2V", drain:.07, fat:.12, use:"乾電池の代わり（デジカメ・ゲーム機）",
+    tip:"乾電池と同じ形で、充電してくり返し使える。"},
+  {id:"lo", nm:"リチウムイオン電池", kind:2, v:"3.7V", drain:.05, fat:.08, use:"スマートフォン・ノートPC・電気自動車",
+    tip:"小型・軽量でパワフル。くり返し使える。強い衝撃や高温で発熱・発火することがある。"},
+  {id:"pb", nm:"鉛蓄電池", kind:2, v:"12V", drain:.035, fat:.08, use:"自動車・非常用電源",
+    tip:"大きな電流を取り出せる。重いが、安く信頼性が高い。"},
+];
+const B = { cell:CELLS[1], level:1, fatigue:0, using:false, charging:false };
+const cellsEl = $("#cells");
+cellsEl.innerHTML = CELLS.map(x => `<button class="cell" data-id="${x.id}" aria-pressed="${x.id==="al"}">
+  <span class="kind ${x.kind===1?"p1":"p2"}">${x.kind===1?"一次電池（使い切り）":"二次電池（充電できる）"}</span>
+  <span class="nm">${x.nm}</span><span class="vv">${x.v}</span></button>`).join("");
+cellsEl.addEventListener("click", e => {
+  const b = e.target.closest(".cell"); if(!b) return;
+  cellsEl.querySelectorAll(".cell").forEach(x => x.setAttribute("aria-pressed", x===b));
+  B.cell = CELLS.find(x => x.id===b.dataset.id); B.level = 1; B.fatigue = 0;
+  showCell(); msg("");
+});
+function msg(t, cls=""){ const m=$("#bMsg"); m.textContent=t; m.className="msg "+cls; }
+function showCell(){
+  const x = B.cell;
+  $("#bName").textContent = x.nm; $("#bVolt").textContent = x.v;
+  $("#bInfo").innerHTML = `<b>${x.nm}</b>（${x.kind===1?"一次電池":"二次電池"}）<br>${x.tip}<br><span class="q">主な用途：${x.use}</span>`;
+}
+showCell();
+holdBtn($("#useBtn"), v => B.using = v);
+holdBtn($("#chgBtn"), v => {
+  B.charging = v;
+  if (v && B.cell.kind===1) msg("✕ 一次電池は充電できません（液もれ・破裂の危険）", "bad");
+});
+$("#newBtn").addEventListener("click", () => { B.level=1; B.fatigue=0; msg(""); });
+function stepCell(dt){
+  const x = B.cell;
+  if (B.using && B.level > 0){
+    B.level = Math.max(0, B.level - x.drain*dt);
+    B.fatigue = Math.min(.6, B.fatigue + x.fat*dt*0.35);
+    if (B.level===0) msg("電池が切れた！ " + (x.kind===2 ? "充電してみよう" : "一次電池は交換が必要"), "bad");
+  } else {
+    const before = B.fatigue;
+    B.fatigue = Math.max(0, B.fatigue - dt*0.12);
+    if (x.id==="mn" && before > .15 && B.fatigue <= .15 && B.level>0) msg("休ませたら、パワーが回復した！", "ok");
+  }
+  if (B.charging && x.kind===2 && B.level < 1){
+    B.level = Math.min(1, B.level + 0.2*dt);
+    msg(B.level>=1 ? "満充電！ くり返し使える" : "充電中…", "ok");
+  }
+}
+function power(){ return B.level > 0 ? Math.max(0, Math.min(B.level*3,1) - B.fatigue) : 0; }
+function drawLamp(){
+  const [c,w,h] = fit($("#cvLamp"));
+  const p = B.using ? power() : 0;
+  const cx = w/2, cy = h/2 - 10;
+  if (p > 0){
+    const g = c.createRadialGradient(cx,cy,6,cx,cy,90);
+    g.addColorStop(0, C.glow); g.addColorStop(1,"rgba(255,200,80,0)");
+    c.globalAlpha = p; c.fillStyle = g; c.beginPath(); c.arc(cx,cy,90,0,TAU); c.fill(); c.globalAlpha = 1;
+  }
+  c.fillStyle = C.surface; c.strokeStyle = C.ink; c.lineWidth = 2;
+  c.beginPath(); c.arc(cx,cy,30,0,TAU); c.fill(); c.stroke();
+  c.globalAlpha = .15 + .85*p; c.fillStyle = C.glow; c.beginPath(); c.arc(cx,cy,24,0,TAU); c.fill(); c.globalAlpha = 1;
+  c.fillStyle = C.muted; c.fillRect(cx-13, cy+28, 26, 16);
+  // cell drawing
+  const col = B.cell.kind===1 ? C.dc : C.ac;
+  const bx = cx-40, by = h-36;
+  c.strokeStyle = C.ink; c.strokeRect(bx, by, 80, 24);
+  c.fillStyle = col; c.fillRect(bx+2, by+2, 76*B.level, 20);
+  c.fillStyle = C.ink; c.fillRect(bx+80, by+7, 5, 10);
+  c.strokeStyle = C.muted; c.beginPath(); c.moveTo(cx, cy+44); c.lineTo(cx, by); c.stroke();
+  $("#gLevel").style.width = (B.level*100)+"%";
+  $("#gLevel").style.background = B.level < .2 ? C.heat : C.good;
+  $("#gPower").style.width = (power()*100)+"%";
+  const fatW = B.level > 0 ? Math.min(B.fatigue, Math.min(B.level*3,1)) : 0;
+  $("#gFat").style.left = (power()*100)+"%"; $("#gFat").style.width = (fatW*100)+"%";
+  $("#chgBtn").disabled = false;
+}
+// adapter svg
+(function(){
+  const svg = $("#svgAdapter");
+  const wave = (kind, x, y, w, h, col) => {
+    let d = "";
+    for (let i=0;i<=60;i++){
+      const t = i/60, s = Math.sin(TAU*2*t);
+      let v = kind==="big" ? s : kind==="small" ? s*.45 : kind==="rect" ? Math.abs(s)*.45 : .45 - .04*Math.abs(Math.sin(TAU*4*t));
+      if (kind==="flat") v = .45;
+      d += (i?"L":"M") + (x + w*t).toFixed(1) + " " + (y - v*h/2).toFixed(1);
+    }
+    return `<line x1="${x}" y1="${y}" x2="${x+w}" y2="${y}" stroke="var(--line)" stroke-width="1"/>
+            <path d="${d}" fill="none" stroke="${col}" stroke-width="3" stroke-linejoin="round"/>`;
+  };
+  const steps = [
+    ["コンセント","交流 100V","big","var(--ac)"],
+    ["変圧する","交流 → 低い電圧に","small","var(--ac)"],
+    ["整流する","向きを一方向にそろえる","rect","var(--dc)"],
+    ["なめらかにする","直流 5〜12V","flat","var(--dc)"],
+  ];
+  let html = "";
+  steps.forEach((s,i) => {
+    const x = 10 + i*198;
+    html += `<rect x="${x}" y="10" width="170" height="180" rx="10" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+      <text x="${x+85}" y="40" text-anchor="middle" font-weight="700" font-size="18" fill="var(--ink)">${s[0]}</text>
+      ${wave(s[2], x+20, 108, 130, 90, s[3])}
+      <text x="${x+85}" y="176" text-anchor="middle" font-size="14" fill="var(--muted)">${s[1]}</text>`;
+    if (i<3) html += `<path d="M${x+174} 100 l18 0 m-7 -7 l7 7 l-7 7" fill="none" stroke="var(--ink)" stroke-width="2.5"/>`;
+  });
+  svg.innerHTML = html;
+})();
+
+/* ================= 送電・配電 ================= */
+const CHAIN = [
+  {nm:"発電所", v:"発電", kv:27000, x:50, desc:"発電機で交流の電気をつくる。すぐ近くの変圧器で電圧を上げてから送り出す。"},
+  {nm:"超高圧変電所", v:"275,000〜500,000V", kv:500000, x:195, desc:"とても高い電圧で、遠くまで少ない損失で送る。大きな鉄塔が並ぶ区間。"},
+  {nm:"一次変電所", v:"154,000〜187,000V", kv:154000, x:335, desc:"電圧を少し下げて、各地域へ分けて送る。"},
+  {nm:"中間変電所", v:"66,000〜77,000V", kv:66000, x:475, desc:"さらに電圧を下げる。大きな工場や鉄道には、このあたりから直接送られることもある。"},
+  {nm:"配電用変電所", v:"22,000〜77,000V → 6,600V", kv:6600, x:615, desc:"ここまでが「送電」。6,600Vにして、町の電柱へ「配電」する。"},
+  {nm:"柱上変圧器", v:"6,600V → 100V・200V", kv:200, x:740, desc:"電柱の上の変圧器。家庭で使える100V・200Vに下げる。"},
+  {nm:"家庭", v:"100V・200V", kv:100, x:850, desc:"コンセントは100V。エアコンやIH調理器などは200Vを使うこともある。"},
+];
+(function(){
+  const svg = $("#svgChain");
+  const lw = kv => 2 + Math.max(0, Math.log10(kv) - 2) * 2.2;
+  let html = `<text x="12" y="22" font-size="13" fill="var(--muted)">← 送電 →</text><text x="660" y="22" font-size="13" fill="var(--muted)">← 配電 →</text>
+   <line x1="628" y1="12" x2="628" y2="232" stroke="var(--muted)" stroke-dasharray="4 4"/>`;
+  for (let i=0;i<CHAIN.length-1;i++){
+    const a = CHAIN[i], b = CHAIN[i+1];
+    const kv = Math.max(i===0 ? 500000 : a.kv, 100);
+    const w = lw(i===0 ? 500000 : a.kv);
+    html += `<line x1="${a.x}" y1="110" x2="${b.x}" y2="110" stroke="var(--ac)" stroke-opacity=".25" stroke-width="${w}"/>
+             <line class="flow" x1="${a.x}" y1="110" x2="${b.x}" y2="110" stroke="var(--ac)" stroke-width="${Math.max(2,w*.45)}" stroke-linecap="round" style="animation-duration:${(0.35 + i*0.18).toFixed(2)}s"/>`;
+  }
+  const icon = (i,x) => {
+    if (i===0) return `<rect x="${x-26}" y="84" width="52" height="42" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5" class="nbox"/>
+      <rect x="${x+8}" y="62" width="10" height="24" fill="var(--muted)"/><rect x="${x-18}" y="98" width="12" height="10" fill="var(--glow)"/>`;
+    if (i===5) return `<rect x="${x-3}" y="70" width="6" height="90" fill="var(--muted)"/>
+      <rect x="${x-16}" y="90" width="32" height="30" rx="4" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5" class="nbox"/>`;
+    if (i===6) return `<path d="M${x-26} 102 L${x} 80 L${x+26} 102 V132 H${x-26} Z" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5" class="nbox"/>
+      <rect x="${x-8}" y="112" width="16" height="20" fill="var(--glow)"/>`;
+    return `<rect x="${x-26}" y="88" width="52" height="44" rx="4" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5" class="nbox"/>
+      <circle cx="${x-9}" cy="110" r="8" fill="none" stroke="var(--ac)" stroke-width="2.5"/><circle cx="${x+9}" cy="110" r="8" fill="none" stroke="var(--ac)" stroke-width="2.5"/>`;
+  };
+  CHAIN.forEach((n,i) => {
+    const barH = Math.max(3, (Math.log10(Math.max(n.kv,100)) - 1.8) * 22);
+    html += `<g class="node" data-i="${i}" tabindex="0" role="button" aria-label="${n.nm}">
+      <rect x="${n.x-44}" y="40" width="88" height="200" fill="transparent"/>
+      ${icon(i,n.x)}
+      <text x="${n.x}" y="58" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">${n.nm}</text>
+      <rect x="${n.x-8}" y="${236-barH}" width="16" height="${barH}" fill="var(--ac)" opacity=".7"/>
+      <text x="${n.x}" y="${230-barH}" text-anchor="middle" font-size="11" font-family="IBM Plex Mono, monospace" fill="var(--muted)">${i===0?"":n.kv>=10000?(n.kv/10000)+"万V":n.kv+"V"}</text>
+    </g>`;
+  });
+  svg.innerHTML = html;
+  const sel = i => {
+    svg.querySelectorAll(".node").forEach(g => g.classList.toggle("sel", +g.dataset.i===i));
+    const n = CHAIN[i];
+    $("#chainInfo").innerHTML = `<b>${n.nm}</b>　<b class="v">${n.v}</b><br>${n.desc}`;
+  };
+  svg.addEventListener("click", e => { const g = e.target.closest(".node"); if (g) sel(+g.dataset.i); });
+  svg.addEventListener("keydown", e => { const g = e.target.closest(".node"); if (g && (e.key==="Enter"||e.key===" ")){ e.preventDefault(); sel(+g.dataset.i);} });
+  sel(1);
+})();
+const VOLTS = [6600, 22000, 66000, 154000, 275000, 500000];
+const P = 1e9, R = 2;
+let wireT = 0;
+function lossRatio(){ const V = VOLTS[+$("#vSlider").value]; return P*R/(V*V); }
+function updateLoss(){
+  const V = VOLTS[+$("#vSlider").value], I = P/V, r = lossRatio();
+  $("#lV").textContent = V.toLocaleString() + " V";
+  $("#lI").textContent = Math.round(I).toLocaleString() + " A";
+  const lossEl = $("#lLoss");
+  if (r >= 1){ lossEl.textContent = "送れない"; lossEl.style.color = C.heat; }
+  else { lossEl.textContent = (r*100 < 1 ? (r*100).toFixed(1) : Math.round(r*100)) + " %"; lossEl.style.color = r > .2 ? C.heat : r > .05 ? C.warn : C.good; }
+  const lr = Math.min(1, r);
+  $("#barD").style.width = ((1-lr)*100)+"%"; $("#barL").style.width = (lr*100)+"%";
+}
+$("#vSlider").addEventListener("input", updateLoss);
+updateLoss();
+function drawWire(dt){
+  const [c,w,h] = fit($("#cvWire"));
+  const r = Math.min(1, lossRatio());
+  const V = VOLTS[+$("#vSlider").value], I = P/V;
+  const y = h/2;
+  const towerH = 20 + 60*Math.log10(V/6600)/Math.log10(500000/6600);
+  c.fillStyle = C.ink; c.font = `700 13px ${FONT}`; c.textAlign = "center"; c.textBaseline="alphabetic";
+  c.fillText("発電所", 40, h-10); c.fillText("町", w-40, h-10);
+  c.fillStyle = C.surface; c.strokeStyle = C.ink; c.lineWidth = 1.5;
+  c.fillRect(18, y-6, 44, 36); c.strokeRect(18, y-6, 44, 36);
+  c.fillRect(w-62, y-6, 44, 36); c.strokeRect(w-62, y-6, 44, 36);
+  // towers
+  const lineY = y - towerH*0.45 + 6;
+  c.strokeStyle = C.muted; c.lineWidth = 2;
+  for (let i=1;i<=4;i++){
+    const tx = 62 + (w-124)*i/5;
+    c.beginPath(); c.moveTo(tx-8, y+30); c.lineTo(tx, lineY-4); c.lineTo(tx+8, y+30); c.stroke();
+  }
+  // wire with heat color
+  const heatW = 2 + Math.min(10, Math.log10(I/2000+1)*8);
+  c.strokeStyle = r > .05 ? C.heat : C.ac;
+  c.globalAlpha = .35 + .65*Math.min(1, r*3 + .2);
+  c.lineWidth = heatW;
+  if (r > .2){ c.shadowColor = C.heat; c.shadowBlur = 12 + 20*r; }
+  c.beginPath(); c.moveTo(62, y+4);
+  c.quadraticCurveTo(62 + 20, lineY, 62 + (w-124)*0.2, lineY);
+  for (let i=1;i<4;i++){
+    const a = 62 + (w-124)*i/5, b = 62 + (w-124)*(i+1)/5;
+    c.quadraticCurveTo((a+b)/2, lineY + 14, b, lineY);
+  }
+  c.quadraticCurveTo(w-82, lineY, w-62, y+4);
+  c.stroke(); c.shadowBlur = 0; c.globalAlpha = 1;
+  // heat waves
+  if (r > .05 && !paused){ wireT += dt; }
+  if (r > .05){
+    c.strokeStyle = C.heat; c.lineWidth = 1.5; c.globalAlpha = Math.min(1, r*2);
+    for (let i=0;i<8;i++){
+      const hx = 90 + (w-180)*i/7, ph = (wireT*1.2 + i*.37) % 1;
+      c.globalAlpha = Math.min(1, r*2) * (1-ph);
+      c.beginPath();
+      for (let k=0;k<12;k++){ const yy = lineY - 10 - ph*30 - k*1.6; const xx = hx + Math.sin(k*.9 + i)*3; k?c.lineTo(xx,yy):c.moveTo(xx,yy); }
+      c.stroke();
+    }
+    c.globalAlpha = 1;
+  }
+  c.fillStyle = C.muted; c.font = `12px ${FONT}`; c.textAlign = "center";
+  c.fillText(r >= 1 ? "電流が大きすぎて、電線が熱くなりすぎる" : r > .05 ? "電線が熱をもつ" : "電流が小さく、熱になる電気が少ない", w/2, h-8);
+}
+
+/* ================= 周波数 ================= */
+const PREFS = [
+ ["北海道",12,0,50,2],["青森",12,1,50],["秋田",11,2,50],["岩手",12,2,50],["山形",11,3,50],["宮城",12,3,50],
+ ["石川",8,3,60],["富山",9,3,60],["新潟",10,3,50],
+ ["島根",3,4,60],["鳥取",4,4,60],["兵庫",5,4,60],["京都",6,4,60],["福井",7,4,60],["岐阜",8,4,60],["長野",9,4,60],["群馬",10,4,50],["福島",11,4,50],
+ ["山口",2,5,60],["広島",3,5,60],["岡山",4,5,60],["大阪",5,5,60],["奈良",6,5,60],["滋賀",7,5,60],["愛知",8,5,60],["山梨",9,5,50],["埼玉",10,5,50],["栃木",11,5,50],["茨城",12,5,50],
+ ["福岡",1,6,60],["大分",2,6,60],["和歌山",6,6,60],["三重",8,6,60],["静岡",9,6,"mix"],["神奈川",10,6,50],["東京",11,6,50],["千葉",12,6,50],
+ ["佐賀",0,7,60],["熊本",1,7,60],["宮崎",2,7,60],["愛媛",3,7,60],["香川",4,7,60],
+ ["長崎",0,8,60],["鹿児島",1,8,60],["高知",3,8,60],["徳島",4,8,60],
+ ["沖縄",0,10,60],
+];
+const NOTE = {
+  "北海道":"北海道電力の地域。わたしたちの地域は50Hz。",
+  "静岡":"富士川を境に、東側は50Hz、西側は60Hz。1つの県の中で分かれている。",
+  "新潟":"大部分は50Hz。糸魚川市の一部などは60Hz。",
+  "長野":"大部分は60Hz。一部に50Hzの地域もある。",
+  "山梨":"大部分は50Hz。一部に60Hzの地域もある。",
+  "群馬":"大部分は50Hz。一部に60Hzの地域もある。",
+  "沖縄":"本土とはつながっていない独立した電力網で、60Hz。",
+};
+(function(){
+  const svg = $("#svgMap"), S = 44, G = 3;
+  let html = `<defs><linearGradient id="mixg" x1="0" y1="0" x2="1" y2="0">
+    <stop offset=".5" style="stop-color:var(--hz60)"/><stop offset=".5" style="stop-color:var(--hz50)"/></linearGradient></defs>
+    <path d="M${9*S+S/2+2} ${2*S} V${7*S+10}" stroke="var(--ink)" stroke-width="3" stroke-dasharray="7 5" fill="none"/>
+    <text x="${9*S+S/2+8}" y="${7*S+30}" font-size="13" font-weight="700" fill="var(--ink)">境目</text>
+    <rect x="${0-2}" y="${10*S-8}" width="${S+8}" height="${S+12}" fill="none" stroke="var(--line)" stroke-dasharray="3 3"/>`;
+  PREFS.forEach(([nm,c,r,hz,w=1]) => {
+    const fill = hz==="mix" ? "url(#mixg)" : hz===50 ? "var(--hz50)" : "var(--hz60)";
+    const x = c*S + 4, y = r*S + 6, ww = w*S - G, fs = nm.length>=3 ? 11 : 13;
+    html += `<g class="tile" data-nm="${nm}" tabindex="0" role="button" aria-label="${nm}">
+      <rect x="${x}" y="${y}" width="${ww}" height="${S-G}" rx="5" fill="${fill}" stroke="var(--surface)" stroke-width="1"/>
+      <text x="${x+ww/2}" y="${y+(S-G)/2+4}" text-anchor="middle" font-size="${fs}" font-weight="700" fill="#fff">${nm}</text></g>`;
+  });
+  html += `<circle cx="${12*S+4+ (2*S-G)*0.38}" cy="${0*S+6+(S-G)*0.8}" r="4" fill="#fff" stroke="var(--ink)" stroke-width="2"/>
+    <text x="${12*S-4}" y="${0*S+56}" font-size="11" text-anchor="end" fill="var(--ink)" font-weight="700">登別</text>`;
+  svg.innerHTML = html;
+  const sel = nm => {
+    svg.querySelectorAll(".tile").forEach(g => g.classList.toggle("sel", g.dataset.nm===nm));
+    const p = PREFS.find(x => x[0]===nm);
+    const hzTxt = p[3]==="mix" ? `<b style="color:var(--hz50)">50Hz</b> と <b style="color:var(--hz60)">60Hz</b>` :
+      `<b style="color:var(--${p[3]===50?"hz50":"hz60"});font-size:22px" class="num">${p[3]}Hz</b>`;
+    $("#hzInfo").innerHTML = `<b style="font-size:20px">${nm}</b>　${hzTxt}<br>${NOTE[nm] || (p[3]===50 ? "東日本の地域。1秒間に50回くり返す交流。" : "西日本の地域。1秒間に60回くり返す交流。")}`;
+  };
+  svg.addEventListener("click", e => { const g = e.target.closest(".tile"); if (g) sel(g.dataset.nm); });
+  svg.addEventListener("keydown", e => { const g = e.target.closest(".tile"); if (g && (e.key==="Enter"||e.key===" ")){ e.preventDefault(); sel(g.dataset.nm);} });
+  sel("北海道");
+})();
+let hzT = 0;
+function drawHz(dt){
+  const [c,w,h] = fit($("#cvHz"));
+  hzT += dt*0.02;
+  const win = 0.1, ml = 44, pw = w-ml-10;
+  [[50,C.hz50,h*0.27],[60,C.hz60,h*0.73]].forEach(([hz,col,zy]) => {
+    const amp = h*0.18;
+    c.strokeStyle = C.line; c.lineWidth = 1; c.beginPath(); c.moveTo(ml,zy); c.lineTo(ml+pw,zy); c.stroke();
+    c.strokeStyle = col; c.lineWidth = 2.5; c.beginPath();
+    for (let i=0;i<=pw;i++){ const t = hzT - win + win*i/pw; const y = zy - amp*Math.sin(TAU*hz*t); i?c.lineTo(ml+i,y):c.moveTo(ml+i,y); }
+    c.stroke();
+    c.fillStyle = col; c.font = `600 14px ${NUMF}`; c.textAlign="left"; c.textBaseline="middle";
+    c.fillText(hz+"Hz", 2, zy);
+    c.fillStyle = C.muted; c.font = `12px ${FONT}`; c.textAlign="right";
+    c.fillText(`0.1秒で${hz/10}回`, ml+pw, zy-amp-8);
+  });
+}
+
+/* ================= 需給バランス ================= */
+const LOADS = [
+  {nm:"家A", u:2, on:true},{nm:"家B", u:2, on:false},{nm:"学校", u:3, on:true},
+  {nm:"病院", u:3, on:false},{nm:"商店", u:2, on:false},{nm:"工場", u:5, on:false},
+];
+const G2 = { f:50, bad:0, out:false, auto:false, autoT:0, ok:0, ang:0 };
+const loadsEl = $("#loads");
+function renderLoads(){
+  loadsEl.innerHTML = LOADS.map((l,i) => `<button class="load" data-i="${i}" aria-pressed="${l.on}">${l.nm}<small>使う量 ${l.u}</small></button>`).join("");
+}
+renderLoads();
+loadsEl.addEventListener("click", e => {
+  const b = e.target.closest(".load"); if (!b || G2.out) return;
+  const l = LOADS[+b.dataset.i]; l.on = !l.on;
+  b.setAttribute("aria-pressed", l.on);
+});
+const genEl = $("#gen");
+genEl.addEventListener("input", () => $("#genOut").textContent = genEl.value);
+$("#autoBtn").addEventListener("click", e => { G2.auto = !G2.auto; e.currentTarget.setAttribute("aria-pressed", G2.auto); });
+function resetGame(){
+  G2.f = 50; G2.bad = 0; G2.out = false; G2.ok = 0;
+  LOADS.forEach((l,i) => l.on = i===0 || i===2);
+  genEl.value = 5; $("#genOut").textContent = "5"; renderLoads();
+}
+$("#resetBtn").addEventListener("click", resetGame);
+$("#cvGen").addEventListener("click", () => { if (G2.out) resetGame(); });
+const demand = () => LOADS.reduce((s,l) => s + (l.on ? l.u : 0), 0);
+function stepBal(dt){
+  if (G2.out) return;
+  const S = +genEl.value, D = demand();
+  G2.f += ((S-D)*0.35 - (G2.f-50)*0.9) * dt;
+  const dev = Math.abs(G2.f-50);
+  G2.bad = dev > 1 ? G2.bad + dt : 0;
+  if (dev < 0.2) G2.ok += dt;
+  if (G2.bad > 1.5){ G2.out = true; }
+  G2.ang += G2.f * 0.12 * dt;
+  if (G2.auto){
+    G2.autoT += dt;
+    if (G2.autoT > 4){
+      G2.autoT = 0;
+      const b = loadsEl.children[Math.floor(Math.random()*LOADS.length)];
+      const l = LOADS[+b.dataset.i]; l.on = !l.on; b.setAttribute("aria-pressed", l.on);
+    }
+  }
+  $("#okTime").textContent = G2.ok.toFixed(1);
+}
+function drawGen(){
+  const [c,w,h] = fit($("#cvGen"));
+  const S = +genEl.value, D = demand();
+  const dev = G2.f - 50, ad = Math.abs(dev);
+  const state = G2.out ? C.heat : ad < 0.2 ? C.good : ad < 0.6 ? C.warn : C.heat;
+  // generator
+  const gx = 90, gy = h/2 - 6, R0 = 56;
+  c.fillStyle = C.surface; c.strokeStyle = C.ink; c.lineWidth = 2.5;
+  c.beginPath(); c.arc(gx,gy,R0,0,TAU); c.fill(); c.stroke();
+  c.save(); c.translate(gx,gy); c.rotate(G2.ang);
+  c.strokeStyle = C.ac; c.lineWidth = 5;
+  for (let i=0;i<4;i++){ c.rotate(Math.PI/2); c.beginPath(); c.moveTo(0,0); c.lineTo(R0-12,0); c.stroke(); }
+  c.restore();
+  c.fillStyle = C.ink; c.beginPath(); c.arc(gx,gy,7,0,TAU); c.fill();
+  c.font = `700 14px ${FONT}`; c.textAlign="center"; c.textBaseline="top";
+  c.fillText("発電所（発電機）", gx, gy+R0+10);
+  // balance scale
+  const bx = w*0.44, by = h*0.36, tilt = Math.max(-.35, Math.min(.35, (D - S)*0.06));
+  c.strokeStyle = C.ink; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(bx, by); c.lineTo(bx, by+86); c.moveTo(bx-26, by+86); c.lineTo(bx+26, by+86); c.stroke();
+  c.save(); c.translate(bx, by); c.rotate(tilt);
+  c.beginPath(); c.moveTo(-86,0); c.lineTo(86,0); c.stroke();
+  [[-86,"供給",S,C.ac],[86,"需要",D,C.dc]].forEach(([x,lab,val,col]) => {
+    c.save(); c.translate(x,0); c.rotate(-tilt);
+    c.strokeStyle = C.muted; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(0,0); c.lineTo(-22,34); c.moveTo(0,0); c.lineTo(22,34); c.stroke();
+    c.fillStyle = col; c.fillRect(-30,34,60,8);
+    c.font = `600 22px ${NUMF}`; c.textBaseline="bottom"; c.fillText(val, 0, 32);
+    c.fillStyle = C.ink; c.font = `700 13px ${FONT}`; c.textBaseline="top"; c.fillText(lab, 0, 46);
+    c.restore();
+  });
+  c.restore();
+  c.beginPath(); c.fillStyle = C.ink; c.arc(bx,by,5,0,TAU); c.fill();
+  // frequency meter
+  const mx = w*0.78, my = h*0.62, mr = Math.min(96, w*0.18);
+  c.lineWidth = 12; c.lineCap = "butt";
+  const arc = (a0,a1,col) => { c.strokeStyle = col; c.beginPath(); c.arc(mx,my,mr,a0,a1); c.stroke(); };
+  const A = v => Math.PI + (v - 49) / 2 * Math.PI;
+  arc(A(49), A(49.4), C.heat); arc(A(49.4), A(49.8), C.warn); arc(A(49.8), A(50.2), C.good);
+  arc(A(50.2), A(50.6), C.warn); arc(A(50.6), A(51), C.heat);
+  c.fillStyle = C.muted; c.font = `12px ${NUMF}`; c.textAlign = "center"; c.textBaseline="middle";
+  [49,50,51].forEach(v => { const a = A(v); c.fillText(v, mx + Math.cos(a)*(mr+20), my + Math.sin(a)*(mr+20) + (v===50?-2:10)); });
+  const nv = Math.max(48.9, Math.min(51.1, G2.f));
+  const na = A(nv);
+  c.strokeStyle = C.ink; c.lineWidth = 3; c.lineCap = "round";
+  c.beginPath(); c.moveTo(mx,my); c.lineTo(mx + Math.cos(na)*(mr-6), my + Math.sin(na)*(mr-6)); c.stroke();
+  c.fillStyle = C.ink; c.beginPath(); c.arc(mx,my,6,0,TAU); c.fill();
+  c.fillStyle = state; c.font = `600 26px ${NUMF}`; c.textBaseline = "top";
+  c.fillText(G2.f.toFixed(2) + " Hz", mx, my+12);
+  c.fillStyle = C.ink; c.font = `700 13px ${FONT}`;
+  c.fillText("周波数", mx, my+44);
+  const verdict = G2.out ? "" : ad < 0.2 ? "バランスOK" : S < D ? "発電が足りない！" : "発電しすぎ！";
+  c.fillStyle = state; c.font = `700 18px ${FONT}`; c.textBaseline = "top";
+  c.fillText(verdict, bx, 8);
+  if (G2.out){
+    c.fillStyle = "rgba(10,14,20,.78)"; c.fillRect(0,0,w,h);
+    c.fillStyle = "#fff"; c.textBaseline = "middle";
+    c.font = `400 36px "Dela Gothic One",${FONT}`; c.fillText("停電！", w/2, h/2-26);
+    c.font = `700 16px ${FONT}`;
+    c.fillText("使う量とつくる量が大きくずれて、周波数がくるった", w/2, h/2+14);
+    c.fillText("クリックでやり直す", w/2, h/2+42);
+  }
+}
+// daily curve
+const DAY = {
+  winter:[70,67,65,64,65,70,80,90,94,93,91,89,88,87,87,89,94,100,99,96,92,86,80,74],
+  summer:[62,59,57,56,56,58,63,70,80,88,93,96,95,97,100,99,96,92,88,84,80,75,70,66],
+};
+let season = "winter";
+seg("#segSeason", v => { season = v; drawDay(); });
+$("#shift").addEventListener("change", drawDay);
+function drawDay(){
+  const svg = $("#svgDay");
+  const base = DAY[season], on = $("#shift").checked;
+  const peak0 = Math.max(...base), cap = peak0*0.9;
+  let E = 0; const shifted = base.map(v => { if (v > cap){ E += v-cap; return cap; } return v; });
+  for (let i=0;i<6;i++) shifted[i] += E/6;
+  const data = on ? shifted : base;
+  const ml=44, mr=12, mt=16, mb=34, W=640, H=270, pw=W-ml-mr, ph=H-mt-mb;
+  const X = i => ml + pw*i/23, Y = v => mt + ph*(1 - v/110);
+  let s = "";
+  for (let v=0; v<=100; v+=20){
+    s += `<line x1="${ml}" y1="${Y(v)}" x2="${W-mr}" y2="${Y(v)}" stroke="var(--line)" stroke-width="1"/>
+          <text x="${ml-6}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono, monospace">${v}</text>`;
+  }
+  [0,6,12,18,23].forEach(hh => s += `<text x="${X(hh)}" y="${H-12}" text-anchor="middle" font-size="12" fill="var(--muted)">${hh}時</text>`);
+  const peakNow = Math.max(...data);
+  const plants = Math.ceil(peakNow/10 - 1e-9);
+  s += `<line x1="${ml}" y1="${Y(plants*10)}" x2="${W-mr}" y2="${Y(plants*10)}" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="6 4"/>
+        <text x="${W-mr}" y="${Y(plants*10)-6}" text-anchor="end" font-size="12" font-weight="700" fill="var(--ink)">用意する発電所の能力 ${plants*10}</text>`;
+  const pts = data.map((v,i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+  s += `<polygon points="${X(0)},${Y(0)} ${pts} ${X(23)},${Y(0)}" fill="var(--dc)" fill-opacity=".18"/>`;
+  if (on){
+    const p0 = base.map((v,i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+    s += `<polyline points="${p0}" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 4"/>`;
+    for (let i=0;i<6;i++) s += `<rect x="${X(i)-5}" y="${Y(shifted[i])}" width="10" height="${Y(base[i])-Y(shifted[i])}" fill="var(--ac)"/>`;
+    base.forEach((v,i) => { if (v > cap) s += `<rect x="${X(i)-5}" y="${Y(v)}" width="10" height="${Y(cap)-Y(v)}" fill="var(--heat)" opacity=".75"/>`; });
+    s += `<text x="${X(3)}" y="${Y(shifted[0])-10}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ac)">夜にためる</text>`;
+    const pk = base.indexOf(peak0);
+    s += `<text x="${X(pk)}" y="${Y(peak0)-8}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--heat)">ためた電気を使う</text>`;
+  }
+  s += `<polyline points="${pts}" fill="none" stroke="var(--dc)" stroke-width="3" stroke-linejoin="round"/>`;
+  const pi = data.indexOf(peakNow);
+  s += `<circle cx="${X(pi)}" cy="${Y(peakNow)}" r="5" fill="var(--dc)" stroke="var(--surface)" stroke-width="2"/>`;
+  s += `<text x="${ml}" y="${mt-4}" font-size="11" fill="var(--muted)">使用量（ピーク＝100）</text>`;
+  svg.innerHTML = s;
+  $("#dPeak").textContent = Math.round(peakNow);
+  $("#dPlants").textContent = plants + " か所";
+}
+drawDay();
+
+/* ---------- main loop ---------- */
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.05, (now - last)/1000); last = now;
+  const d = paused ? 0 : dt;
+  if (active==="dcac"){ stepDcac(d); drawCircuit(); drawWave(); }
+  else if (active==="cell"){ stepCell(d); drawLamp(); }
+  else if (active==="line"){ drawWire(d); }
+  else if (active==="hz"){ drawHz(d); }
+  else if (active==="bal"){ stepBal(d); drawGen(); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>

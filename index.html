@@ -157,6 +157,16 @@ input[type=range]{width:100%;accent-color:var(--ink)}
 .chart svg{width:100%;height:auto;display:block}
 .switch{display:inline-flex;gap:8px;align-items:center;font-weight:700}
 .switch input{width:20px;height:20px;accent-color:var(--ac)}
+.overview{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:0 0 20px}
+.overview h2{font-size:21px;line-height:1.4;margin-bottom:5px}
+.overview p{margin:0 0 12px;color:var(--muted);font-size:15px}
+.route{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.route button{background:var(--sunk);border:1px solid var(--line);border-radius:9px;padding:11px 13px;text-align:left;font-size:15px;line-height:1.5}
+.route button:hover{border-color:var(--ink)}
+.route b{display:block;color:var(--ac);font-size:13px;margin-bottom:2px}
+.look{background:var(--ac-soft);border-left:4px solid var(--ac);border-radius:0 7px 7px 0;padding:9px 12px;font-size:15px}
+.look b{color:var(--ac)}
+@media(max-width:680px){.route{grid-template-columns:1fr}}
 footer{margin-top:28px;font-size:13px;color:var(--muted)}
 </style>
 </head>
@@ -174,6 +184,16 @@ footer{margin-top:28px;font-size:13px;color:var(--muted)}
   </div>
 </header>
 
+<section class="overview" aria-labelledby="guide-title">
+  <h2 id="guide-title">電気は、どうやって家まで届くのだろう？</h2>
+  <p>まず電源の違いを見て、次に「高い電圧で送る理由」、最後に「使う量に合わせる工夫」を確かめよう。</p>
+  <div class="route">
+    <button type="button" data-go="dcac"><b>① 電気の種類</b>電池とコンセントでは、電流の向きはどう違う？</button>
+    <button type="button" data-go="line"><b>② 家までの道</b>電圧を上げてから下げるのはなぜ？</button>
+    <button type="button" data-go="bal"><b>③ 安定して届ける</b>発電量と使用量がずれたらどうなる？</button>
+  </div>
+</section>
+
 <nav class="tabs" role="tablist">
   <button role="tab" data-tab="dcac" aria-selected="true">直流と交流<small>図2・図3</small></button>
   <button role="tab" data-tab="cell" aria-selected="false">電池とACアダプタ<small>図2・図3</small></button>
@@ -187,8 +207,9 @@ footer{margin-top:28px;font-size:13px;color:var(--muted)}
   <div class="stage">
     <div>
       <h2>電流の向きは、ずっと同じ？ 入れかわる？</h2>
-      <div class="q">点は電流のイメージです。スローモーションで向きの変化を見てみよう。</div>
+      <div class="q">点は電流の向きを表すモデルです。電池とコンセントを切り替え、矢印とグラフを比べよう。</div>
     </div>
+    <div class="look"><b>見るところ：</b>直流では矢印は同じ向き。交流では行ったり来たりする。グラフが0をまたぐと向きが変わる。</div>
     <canvas id="cvCircuit" style="height:260px"></canvas>
     <canvas id="cvWave" style="height:200px"></canvas>
     <div class="controls">
@@ -207,14 +228,14 @@ footer{margin-top:28px;font-size:13px;color:var(--muted)}
   </div>
   <aside class="notes">
     <div class="note"><h3>直流（DC）</h3>
-      <p>電圧の大きさと電流の向きが<em class="dc">時間がたっても変わらない</em>電気。電池や、ACアダプタから出る電気。</p></div>
+      <p>電流が<em class="dc">一方向に流れる</em>電気。電池やACアダプタの出力が例。電圧や電流の大きさは、いつも一定とは限らない。</p></div>
     <div class="note"><h3>交流（AC）</h3>
-      <p>電圧の大きさと電流の向きが<em class="ac">周期的に変わる</em>電気。発電所から送られ、コンセントに来ている電気。</p>
-      <p>1秒間にくり返す回数を<b>周波数</b>といい、単位は <b>Hz（ヘルツ）</b>。</p></div>
+      <p>電流の<em class="ac">向きが周期的に入れかわる</em>電気。発電所から送られ、コンセントに来ている電気。</p>
+      <p>波が1秒間にくり返す回数を<b>周波数</b>といい、単位は <b>Hz（ヘルツ）</b>。50Hzなら1秒に50周期、向きは100回切り替わる。</p></div>
     <div class="note"><h3>交流で送るのはなぜ？</h3>
       <p><b>変圧器</b>で電圧をかんたんに変えられるから。高い電圧にして送ると、とちゅうで失う電気（損失）が少なくなる。→「送電・配電」タブへ</p></div>
     <div class="note ask"><h3>考えてみよう</h3>
-      <p>「実際」の速さにすると、電球はどう見える？ 向きが入れかわっているのに、なぜちらついて見えないのだろう。</p></div>
+      <p>直流から交流に切り替えると、矢印とグラフはどう変わる？ 50Hzを60Hzにすると、1周期の時間は長くなる？ 短くなる？</p></div>
     <div><span class="ref">教科書 p.144 図2・図3</span></div>
   </aside>
 </section>
@@ -224,8 +245,9 @@ footer{margin-top:28px;font-size:13px;color:var(--muted)}
   <div class="stage">
     <div>
       <h2>電池は使い切り？ くり返し使える？</h2>
-      <div class="q">電池をえらんで「使う」「充電する」を長押ししてみよう。</div>
+      <div class="q">電池を選び、「使う」「充電する」を押し続けよう。使い切りと充電できる電池の違いを確かめる。</div>
     </div>
+    <div class="look"><b>見るところ：</b>一次電池は充電できない。二次電池は使った後に充電できる。電池の残量や明るさは学習用のモデル。</div>
     <div class="cells" id="cells"></div>
     <div class="bench">
       <canvas id="cvLamp" style="height:170px"></canvas>
@@ -242,21 +264,21 @@ footer{margin-top:28px;font-size:13px;color:var(--muted)}
       </div>
     </div>
     <div>
-      <h2 style="font-size:20px">ACアダプタの中で起きていること</h2>
-      <div class="q">コンセントの交流を、機器が使える低い電圧の直流に変えている。</div>
+      <h2 style="font-size:20px">ACアダプタの働き</h2>
+      <div class="q">コンセントの交流を、機器に合った電圧の直流に変える。下の図は変換の流れを簡単に表したモデルで、内部の回路は製品によって異なる。</div>
     </div>
     <div class="adapter"><svg id="svgAdapter" viewBox="0 0 800 200" role="img" aria-label="ACアダプタの変換の流れ"></svg></div>
   </div>
   <aside class="notes">
     <div class="note"><h3>一次電池 と 二次電池</h3>
       <ul><li><em class="dc">一次電池</em>…使い切り。充電できない（充電すると液もれ・破裂の危険）。</li>
-      <li><em class="ac">二次電池</em>…充電して、くり返し使える。「蓄電池」ともいう。</li></ul></div>
+      <li><em class="ac">二次電池</em>…対応する充電器で充電し、くり返し使える。「蓄電池」ともいう。</li></ul></div>
     <div class="note"><h3>用途に合わせて選ぶ</h3>
       <p id="bInfo"></p></div>
     <div class="note"><h3>安全に使う・捨てる</h3>
-      <ul><li>ACアダプタは<b>定格表示</b>（入力・出力の電圧）を確かめ、機器に合ったものを使う。</li>
-      <li>リチウムイオン電池は、ごみにまぜると<em class="hot">火災</em>の原因に。回収ボックスへ。</li>
-      <li>使い終わった乾電池は、端子にテープをはって地域のルールで出す。</li></ul></div>
+      <ul><li>ACアダプタは<b>定格表示</b>で入力・出力の電圧などを確認し、機器に合うものを使う。</li>
+      <li>リチウムイオン電池を普通のごみに混ぜると<em class="hot">火災</em>の原因になる。自治体などの回収方法を確認する。</li>
+      <li>使い終わった乾電池は端子をテープで絶縁し、地域のルールで出す。</li></ul></div>
     <div><span class="ref">教科書 p.144 図2・図3</span><span class="ref">解説1</span></div>
   </aside>
 </section>
@@ -266,13 +288,14 @@ footer{margin-top:28px;font-size:13px;color:var(--muted)}
   <div class="stage">
     <div>
       <h2>発電所から家庭まで、電圧はどう変わる？</h2>
-      <div class="q">施設をクリックすると説明が出ます。線の太さは電圧の高さのイメージ。</div>
+      <div class="q">施設を順に押して、どこで電圧を上げ、どこで下げるか追ってみよう。線の太さはイメージ。</div>
     </div>
+    <div class="look"><b>見るところ：</b>遠くへ送るときは高い電圧、家庭で使う前には100V・200Vまで下げる。</div>
     <div class="chainbox"><svg id="svgChain" viewBox="0 0 900 250" role="img" aria-label="発電所から家庭までの電圧の変化"></svg></div>
     <div class="info" id="chainInfo" aria-live="polite"></div>
     <div>
       <h2 style="font-size:20px">なぜ、わざわざ高い電圧で送るの？</h2>
-      <div class="q">同じ電力（100万kW）を、抵抗2Ωの電線で送ったときのイメージ計算。</div>
+      <div class="q">同じ電力（100万kW）を、抵抗2Ωの電線で送る単純化した計算例。実際の送電網の値ではありません。</div>
     </div>
     <canvas id="cvWire" style="height:130px"></canvas>
     <div>
@@ -295,11 +318,11 @@ footer{margin-top:28px;font-size:13px;color:var(--muted)}
     <div class="note"><h3>しくみを式で</h3>
       <span class="formula">電力 ＝ 電圧 × 電流</span>
       <span class="formula">損失 ＝ 抵抗 × 電流 × 電流</span>
-      <p>同じ電力なら、電圧を<b>10倍</b>にすると電流は<b>1/10</b>、熱で失う電気は<b>1/100</b>になる。</p></div>
+      <p>同じ電力を送る計算では、電圧を<b>10倍</b>にすると電流は<b>1/10</b>、電線で熱になる電力は<b>1/100</b>になる。</p></div>
     <div class="note"><h3>なぜ下げながら届ける？</h3>
       <p>高い電圧は遠くへ送るのに便利だが、そのままでは危険で家電も使えない。変電所や<b>柱上変圧器</b>で少しずつ下げ、家庭では<b>100V・200V</b>で使う。</p></div>
     <div class="note ask"><h3>考えてみよう</h3>
-      <p>電圧を上げると電線はどう変わった？ 鉄塔が高く、電線が地面から遠いのはなぜだろう。</p></div>
+      <p>スライダーで電圧を上げると、電流と熱による損失はどう変わる？ 送るときは高電圧なのに、家庭に来る前に下げる理由も説明しよう。</p></div>
     <div><span class="ref">教科書 p.145 図5</span><span class="ref">解説3</span></div>
   </aside>
 </section>
@@ -309,8 +332,9 @@ footer{margin-top:28px;font-size:13px;color:var(--muted)}
   <div class="stage">
     <div>
       <h2>東と西で、周波数がちがう</h2>
-      <div class="q">都道府県をクリックしてみよう。境目はおおよそ静岡県の富士川〜新潟県の糸魚川。</div>
+      <div class="q">上と下の波を同じ時間幅で比べよう。地図では東西の違いを確認できる。境目はおおよそ静岡県の富士川〜新潟県の糸魚川。</div>
     </div>
+    <div class="look"><b>見るところ：</b>0.1秒では50Hzは5周期、60Hzは6周期。北海道は50Hz。県内に両方の地域がある県もある。</div>
     <div class="mapgrid">
       <div class="mapbox"><svg id="svgMap" viewBox="0 0 640 520" role="img" aria-label="都道府県別の周波数（タイル地図）"></svg></div>
       <div style="display:grid;gap:12px">
@@ -338,8 +362,9 @@ footer{margin-top:28px;font-size:13px;color:var(--muted)}
   <div class="stage">
     <div>
       <h2>発電所の役になって、需要と供給を合わせよう</h2>
-      <div class="q">使う電気（需要）と、つくる電気（供給）がずれると周波数がくるう。大きくずれると停電！</div>
+      <div class="q">使う量を変えてから、発電の量を合わせよう。北海道の50Hzを基準にした学習用モデル。</div>
     </div>
+    <div class="look"><b>見るところ：</b>需要が増えたままなら周波数が下がる。発電量を調整して、需要と供給を近づけよう。</div>
     <canvas id="cvGen" style="height:230px"></canvas>
     <div class="bigslider">
       <label for="gen" style="font-weight:700">発電の量</label>
@@ -365,13 +390,13 @@ footer{margin-top:28px;font-size:13px;color:var(--muted)}
     <div class="chart"><svg id="svgDay" viewBox="0 0 640 270" role="img" aria-label="1日の電力使用量のグラフ"></svg></div>
     <div class="readouts">
       <div class="ro"><div class="k">いちばん多い時の使用量</div><div class="v" id="dPeak">100</div></div>
-      <div class="ro"><div class="k">必要な発電所（1か所＝10）</div><div class="v" id="dPlants">10 か所</div></div>
+      <div class="ro"><div class="k">必要な発電能力（10刻みのモデル）</div><div class="v" id="dPlants">100</div></div>
     </div>
   </div>
   <aside class="notes">
     <div class="note"><h3>電力の需要と供給のバランス</h3>
-      <p>電気はたくさんためておくのがむずかしいので、発電所では、使われる量を予想しながら<b>使う量と同じだけ</b>発電し続けている。</p>
-      <p>バランスがくずれると周波数がずれ、大きくずれると<em class="hot">停電</em>することがある。</p></div>
+      <p>電気は大量にためておくのが難しい。発電所などは使われる量を予測し、<b>発電と使用の量をほぼ同じ</b>に保つ。</p>
+      <p>バランスが大きくくずれると周波数がずれ、<em class="hot">停電</em>につながることがある。</p></div>
     <div class="note"><h3>安定して届けるための工夫</h3>
       <ul><li>電気の使用量を予想して発電する</li>
       <li>ピーク時の電力を下げる（節電）</li>
@@ -380,7 +405,7 @@ footer{margin-top:28px;font-size:13px;color:var(--muted)}
     <div class="note ask"><h3>やってみよう（p.145）</h3>
       <p>手回し発電機を「発電所役」、電球をつなぐ人を「使用者役」にして、電球の数を変えると手ごたえはどう変わる？</p></div>
     <div><span class="ref">教科書 p.145 図6</span><span class="ref">やってみよう</span></div>
-    <p class="q" style="margin:0">グラフや発電量の数値は、しくみを理解するためのイメージです。</p>
+    <p class="q" style="margin:0">ゲームの周波数変化・停電条件、グラフの使用量と発電能力は、しくみを理解するためのモデルです。</p>
   </aside>
 </section>
 
@@ -434,6 +459,10 @@ $$("nav.tabs button").forEach(b => b.addEventListener("click", () => {
   active = b.dataset.tab;
   $$("nav.tabs button").forEach(x => x.setAttribute("aria-selected", x===b ? "true":"false"));
   $$("section.panel").forEach(p => p.hidden = p.id !== "p-"+active);
+}));
+$$('.route button').forEach(b => b.addEventListener('click', () => {
+  $(`nav.tabs button[data-tab="${b.dataset.go}"]`).click();
+  document.querySelector('nav.tabs').scrollIntoView({behavior:'smooth',block:'start'});
 }));
 $("#pauseBtn").addEventListener("click", e => {
   paused = !paused;
@@ -993,7 +1022,7 @@ function drawDay(){
   const peakNow = Math.max(...data);
   const plants = Math.ceil(peakNow/10 - 1e-9);
   s += `<line x1="${ml}" y1="${Y(plants*10)}" x2="${W-mr}" y2="${Y(plants*10)}" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="6 4"/>
-        <text x="${W-mr}" y="${Y(plants*10)-6}" text-anchor="end" font-size="12" font-weight="700" fill="var(--ink)">用意する発電所の能力 ${plants*10}</text>`;
+        <text x="${W-mr}" y="${Y(plants*10)-6}" text-anchor="end" font-size="12" font-weight="700" fill="var(--ink)">必要な発電能力 ${plants*10}</text>`;
   const pts = data.map((v,i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
   s += `<polygon points="${X(0)},${Y(0)} ${pts} ${X(23)},${Y(0)}" fill="var(--dc)" fill-opacity=".18"/>`;
   if (on){
@@ -1011,7 +1040,7 @@ function drawDay(){
   s += `<text x="${ml}" y="${mt-4}" font-size="11" fill="var(--muted)">使用量（ピーク＝100）</text>`;
   svg.innerHTML = s;
   $("#dPeak").textContent = Math.round(peakNow);
-  $("#dPlants").textContent = plants + " か所";
+  $("#dPlants").textContent = String(plants*10);
 }
 drawDay();
 
@@ -1033,3 +1062,4 @@ requestAnimationFrame(frame);
 
 </body>
 </html>
+
